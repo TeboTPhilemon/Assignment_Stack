@@ -1,0 +1,201 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "",
+	"Metadata": {
+
+	},
+	"Parameters": {
+		"TestVpcCidr": {
+			"Description": "Enter Cidr For TestVpc",
+			"Type": "String"
+		},
+		"TestVpcPubSN1AZ": {
+			"Description": "Enter AZ for TestVpcPubSN1",
+			"Type": "AWS::EC2::AvailabilityZone::Name"
+		},
+		"TestVpcPubSN1Cidr": {
+			"Description": "Enter Cidr For TestVpc Public SN1",
+			"Type": "String"
+		},
+		"TestVpcPriSN1Cidr": {
+			"Description": "Enter Cidr For TestVpc Private SN1",
+			"Type": "String"
+		},
+		"TestVpcPriSN1AZ": {
+			"Description": "-",
+			"Type": "AWS::EC2::AvailabilityZone::Name"
+		}
+	},
+	"Mappings": {
+
+	},
+	"Conditions": {
+
+	},
+	"Resources": {
+		"TestVpc": {
+			"Type": "AWS::EC2::VPC",
+			"Properties": {
+				"CidrBlock": {
+					"Ref": "TestVpcCidr"
+				},
+				"Tags": {
+					"Key": "Name",
+					"Value": "TestVpc"
+				}
+			}
+		},
+		"TestVpcPubSN1": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": {
+					"Ref": "TestVpcPubSN1AZ"
+				},
+				"VpcId": {
+					"Ref": "TestVpc"
+				},
+				"CidrBlock": {
+					"Ref": "TestVpcPubSN1Cidr"
+				},
+				"Tags": {
+					"Key": "Name",
+					"Value": "TestVpcPubSN1"
+				}
+			}
+		},
+		"TestVpcPriSN1": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": {
+					"Ref": "TestVpcPriSN1AZ"
+				},
+				"VpcId": {
+					"Ref": "TestVpc"
+				},
+				"CidrBlock": {
+					"Ref": "TestVpcPriSN1Cidr"
+				},
+				"Tags": {
+					"Key": "Name",
+					"Value": "TestVpcPriSN1"
+				}
+			}
+		},
+		"TestVpcPubSN1RT": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "TestVpc"
+				},
+				"Tags": {
+					"Key": "Name",
+					"Value": "TestVpcPubSN1RT"
+				}
+			}
+		},
+		"TestVpcPubSN1RTAss": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "TestVpcPubSN1"
+				},
+				"RouteTableId": {
+					"Ref": "TestVpcPubSN1RT"
+				}
+			}
+		},
+		"TestVpcPriSN1RT": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "TestVpc"
+				},
+				"Tags": {
+					"Key": "Name",
+					"Value": "TestVpcPriSN1RT"
+				}
+			}
+		},
+		"TestVpcPriSN1RTAss": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "TestVpcPriSN1"
+				},
+				"RouteTableId": {
+					"Ref": "TestVpcPriSN1RT"
+				}
+			}
+		},
+		"TestVpcIGW": {
+			"Type": "AWS::EC2::InternetGateway",
+			"Properties": {
+				"Tags": {
+					"Key": "Name",
+					"Value": "TestVpcIGW"
+				}
+			}
+		},
+		"AttachGateway": {
+			"Type": "AWS::EC2::VPCGatewayAttachment",
+			"Properties": {
+				"VpcId": {
+					"Ref": "TestVpc"
+				},
+				"InternetGatewayId": {
+					"Ref": "TestVpcIGW"
+				}
+			},
+			"TestVpcNatGw1": {
+				"Type": "AWS::EC2::NatGateway",
+				"Properties": {
+					"SubnetId": {
+						"Ref": "TestVpcPubSN1AZ"
+					},
+					"AllocationId": {
+						"Fn::GetAtt": [
+							"NatGw1ElasticIP",
+							"AllocationId"
+						]
+					},
+					"Tags": [{
+						"Key": "Name",
+						"Value": "TestVpcNatGw1"
+					}]
+				}
+			},
+			"NatGw1ElasticIP": {
+				"Type": "AWS::EC2::EIP",
+				"Properties": {
+					"Domain": "vpc"
+				}
+			},
+			"TestVpcPubSN1Route": {
+				"Type": "AWS::EC2::Route",
+				"Properties": {
+					"RouteTableId": {
+						"Ref": "TestVpcPubSN1RT"
+					},
+					"DestinationCidrBlock": "0.0.0.0/0",
+					"GatewayId": {
+						"Ref": "TestVpcIGW"
+					}
+				}
+			},
+			"TestVpcPriSN1Route": {
+				"Type": "AWS::EC2::Route",
+				"Properties": {
+					"RouteTableId": {
+						"Ref": "TestVpcPriSN1RT"
+					},
+					"DestinationCidrBlock": "0.0.0.0/0",
+					"GatewayId": {
+						"Ref": "TestVpcNatGw1"
+					}
+				}
+			}
+
+		}
+	},
+	"Outputs": {}
+}
